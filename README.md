@@ -28,6 +28,23 @@ add vk and ok tokens to env file.
 > Вечный access_token - Получить новый \
 > application_secret_key = Session_secret_key \
 
+run docker container
+```bash
+docker run -e VK_TOKEN='VK_TOKEN_HERE' \
+           -e API_BOT_TOKEN='API_BOT_TOKEN_HERE' \
+           -e VK_ALBUM_ID='VK_ALBUM_ID' \
+           -e OK_ACCESS_TOKEN='OK_ACCESS_TOKEN_HERE' \
+           -e OK_APPLICATION_KEY='OK_APPLICATION_KEY_HERE' \
+           -e OK_APPLICATION_SECRET_KEY='OK_APPLICATION_SECRET_KEY_HERE' \
+           -e OK_GROUP_ID='OK_GROUP_ID_HERE' \
+           -e SD_HOST='127.0.0.1' \
+           -e SD_PORT='7861' \
+           -e SD_USERNAME='user' \
+           -e SD_PASSWORD='1234' \
+           -e DEBUG='no' \
+           soaska.ru/soaska/sd_telegram:latest
+```
+
 run bot with python
 ```bash
 python -m venv venv
@@ -35,7 +52,7 @@ source venv/bin/activate
 pip install -m requirements.txt 
 python bot.py
 ```
-run bot in docker
+build bot in docker
 ```bash
 docker build -t soaska/sd_bot .
 docker run soaska/sd_bot
