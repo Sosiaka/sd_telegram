@@ -1,0 +1,7 @@
+venv
+.venv
+.env
+.gitea
+example.env
+LICENSE
+README.md

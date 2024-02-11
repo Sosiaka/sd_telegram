@@ -3,7 +3,7 @@ run-name: ${{ gitea.actor }} is building new image 🚀
 on: [push]
 
 jobs:
-  Explore-Gitea-Actions:
+  Build-Docker:
     runs-on: soaska
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ gitea.event_name }} event."
@@ -27,17 +27,13 @@ jobs:
       - name: Build Dockerfile
         run: |
           docker build -t sd_telegram .          
-      - name: Add new variables
-        run: |
-          package_name=$(basename ${{ github.repository }})
-          commit_date=$(git log -1 --format=%cd --date=format:'%Y%m%d%H%M%S')
-          echo "package_name=$package_name, commit_date=$commit_date" 
       - name: Upload Docker image to soaska.ru
         run: |
           package_name=$(basename ${{ github.repository }})
-          commit_date=$(git log -1 --format=%cd --date=format:'%Y%m%d%H%M%S')
+          branch_name=$(git rev-parse --abbrev-ref HEAD | tr '[:upper:]' '[:lower:]')
+          
           docker login -u ${{ secrets.username }} -p ${{ secrets.password }} soaska.ru
-          docker tag sd_telegram soaska.ru/soaska/$package_name:$commit_date
-          docker tag sd_telegram soaska.ru/soaska/$package_name:latest
-          docker push soaska.ru/soaska/$package_name:$commit_date
-          docker push soaska.ru/soaska/$package_name:latest
+          docker tag sd_telegram soaska.ru/${{ secrets.username }}/$package_name:$branch_name
+          docker tag sd_telegram soaska.ru/${{ secrets.username }}/$package_name:latest
+          docker push soaska.ru/${{ secrets.username }}/$package_name:$branch_name
+          docker push soaska.ru/${{ secrets.username }}/$package_name:latest
