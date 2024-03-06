@@ -803,9 +803,10 @@ async def inl_fp(message: Union[types.Message, types.CallbackQuery]) -> None:
     if m == 'fp_mobile':
         data['steps'] = 5
         data['enable_hr'] = 'True'
-        data['denoising_strength'] = '0.35'
+        data['denoising_strength'] = '0.6'
+        data['sampler_name'] = 'DPM++ SDE'
         data['hr_upscaler'] = '4x_NMKD-Siax_200k' #https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/4x_NMKD-Siax_200k.pth
-        data['hr_second_pass_steps'] = '2'
+        data['hr_second_pass_steps'] = '6'
         data['cfg_scale'] = '1.6'
         data['width'] = '832'
         data['height'] = '1216'
