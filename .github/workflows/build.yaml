@@ -4,9 +4,7 @@ on: [push]
 
 jobs:
   Explore-github-Actions:
-    runs-on:
-      group: ubuntu-runners
-      labels: ubuntu-20.04-16core
+    runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Install Node.js
