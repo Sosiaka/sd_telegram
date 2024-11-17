@@ -9,24 +9,24 @@ jobs:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Install Node.js
         run: |
-          apt install -y nodejs
+          sudo apt install -y nodejs
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: List files in the repository
         run: |
-          ls ${{ github.workspace }}
+          sudo ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Install Docker
         run: |
-          apt install -y docker
+          sudo apt install -y docker
       - name: Start Docker service
         run: |
-          dockerd &
+          sudo dockerd &
           sleep 5
-          docker info
+          sudo docker info
       - name: Build Dockerfile
         run: |
-          docker build -t sd_telegram .
+          sudo docker build -t sd_telegram .
       - name: Add new variables
         run: |
           package_name=$(basename ${{ github.repository }})
@@ -36,8 +36,8 @@ jobs:
         run: |
           package_name=$(basename ${{ github.repository }})
           commit_date=$(git log -1 --format=%cd --date=format:'%Y%m%d%H%M%S')
-          docker login -u ${{ secrets.username }} -p ${{ secrets.password }} ghcr.io
-          docker tag sd_telegram ghcr.io/${{ secrets.username }}/$package_name:$commit_date
-          docker tag sd_telegram ghcr.io/${{ secrets.username }}/$package_name:latest
-          docker push ghcr.io/${{ secrets.username }}/$package_name:$commit_date
-          docker push ghcr.io/${{ secrets.username }}/$package_name:latest
+          sudo docker login -u ${{ secrets.username }} -p ${{ secrets.password }} ghcr.io
+          sudo docker tag sd_telegram ghcr.io/${{ secrets.username }}/$package_name:$commit_date
+          sudo docker tag sd_telegram ghcr.io/${{ secrets.username }}/$package_name:latest
+          # sudo docker push ghcr.io/${{ secrets.username }}/$package_name:$commit_date
+          sudo docker push ghcr.io/${{ secrets.username }}/$package_name:beta
