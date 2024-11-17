@@ -1,43 +1,43 @@
-name: Actions Build Docker Image
-run-name: ${{ github.actor }} is building new image 🚀
+name: Create and publish a Docker image
+
 on: [push]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: $(basename ${{ github.repository }})
+
 jobs:
-  Explore-github-Actions:
+  build-and-push-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - name: Install Node.js
-        run: |
-          sudo apt install -y nodejs
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: List files in the repository
-        run: |
-          sudo ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-      - name: Install Docker
-        run: |
-          sudo apt install -y docker
-      - name: Start Docker service
-        run: |
-          sudo dockerd &
-          sleep 5
-          sudo docker info
-      - name: Build Dockerfile
-        run: |
-          sudo docker build -t sd_telegram .
-      - name: "Login to Docker Hub"
-        uses: docker/login-action@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          registry: ghcr.io
-          username: ${{secrets.USERNAME}}
-          password: ${{secrets.PASSWORD}}
-      - name: Upload Docker image to ghcr.io
-        run: |
-          package_name=$(basename ${{ github.repository }})
-          commit_date=$(git log -1 --format=%cd --date=format:'%Y%m%d%H%M%S')
-          #sudo docker tag sd_telegram ghcr.io/${{secrets.USERNAME}}/$package_name:$commit_date
-          sudo docker tag sd_telegram ghcr.io/${{secrets.USERNAME}}/$package_name:beta
-          # sudo docker push ghcr.io/${{secrets.USERNAME}}/$package_name:$commit_date
-          sudo docker push ghcr.io/${{secrets.USERNAME}}/$package_name:beta
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: .
+          push: true
+          tags: beta
+          labels: sd_telegram
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
