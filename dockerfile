@@ -1,4 +1,4 @@
-FROM soaska.ru/soaska/pytorch:latest
+FROM python:latest
 LABEL maintainer="info@borisov-ab.ru"
 
 WORKDIR /bot
