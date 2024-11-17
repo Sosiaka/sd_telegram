@@ -88,6 +88,8 @@ __**mdl**
 change model from list  
 __**smplr**  
 change sampler from list  
+__**sh**  
+change shedulers from list  
 __**hr**  
 change hr_upscale from list  
 __**prompt**  
