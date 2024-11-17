@@ -37,7 +37,7 @@ jobs:
         run: |
           package_name=$(basename ${{ github.repository }})
           commit_date=$(git log -1 --format=%cd --date=format:'%Y%m%d%H%M%S')
-          sudo docker tag sd_telegram ghcr.io/${{ secrets.username }}/$package_name:$commit_date
-          sudo docker tag sd_telegram ghcr.io/${{ secrets.username }}/$package_name:latest
-          # sudo docker push ghcr.io/${{ secrets.username }}/$package_name:$commit_date
-          sudo docker push ghcr.io/${{ secrets.username }}/$package_name:beta
+          #sudo docker tag sd_telegram ghcr.io/${{secrets.USERNAME}}/$package_name:$commit_date
+          sudo docker tag sd_telegram ghcr.io/${{secrets.USERNAME}}/$package_name:beta
+          # sudo docker push ghcr.io/${{secrets.USERNAME}}/$package_name:$commit_date
+          sudo docker push ghcr.io/${{secrets.USERNAME}}/$package_name:beta
