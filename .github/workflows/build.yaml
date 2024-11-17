@@ -4,12 +4,14 @@ on: [push]
 
 jobs:
   Explore-github-Actions:
-    runs-on: alpine
+    runs-on:
+      group: ubuntu-runners
+      labels: ubuntu-20.04-16core
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Install Node.js
         run: |
-          apk add --no-cache nodejs
+          apt install -y nodejs
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: List files in the repository
@@ -18,7 +20,7 @@ jobs:
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Install Docker
         run: |
-          apk add --no-cache docker
+          apt install -y docker
       - name: Start Docker service
         run: |
           dockerd &
