@@ -1,7 +1,8 @@
 aiogram==2.22.2
+wheel
 webuiapi
 translate
-torch
+# torch
 transformers
 vk_api
 ok_api

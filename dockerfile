@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:3.10
 LABEL maintainer="info@borisov-ab.ru"
 
 WORKDIR /bot
