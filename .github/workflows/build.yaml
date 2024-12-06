@@ -1,0 +1,12 @@
+name: If it builds, it probably works
+
+on:
+  push:
+  pull_request:
+jobs:
+  build-telegram-bot:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the sd_telegram Docker image
+      run: docker build . -t sd_telegram:$(date +%s)

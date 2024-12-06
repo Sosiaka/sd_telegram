@@ -61,13 +61,17 @@ OK_APPLICATION_KEY = os.getenv('OK_APPLICATION_KEY')
 OK_APPLICATION_SECRET_KEY = os.getenv('OK_APPLICATION_SECRET_KEY')
 OK_GROUP_ID = os.getenv('OK_GROUP_ID')
 ARRAY_INLINE = []
+try:
+    ALLOWED_USERS = json.loads(os.getenv('ALLOWED_USERS'))
+except json.decoder.JSONDecodeError:
+    print("Вы не ввели id в переменную ALLOWED_USERS, если вы хотите сделать бота общедоступным, то задайте ALLOWED_USERS='[]'")
 
 bot = Bot(token=API_BOT_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 # /create_post_vk
-@dp.message_handler(commands=['create_post_vk'])
+@dp.message_handler(lambda message: message.from_user.id or len(ALLOWED_USERS) == 0, commands=['create_post_vk'])
 async def create_post_vk(message: types.Message) -> None:
     result = subprocess.run(
         ['C:\OSPanel\modules\php\PHP_7.3\php.exe', "C:/OSPanel/domains/localhost/vk/create_post.php"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -280,12 +284,14 @@ async def getProgress(msgTime):
         # TODO aiogram.utils.exceptions.MessageToEditNotFound: Message to edit not found
         proc = round(api.get_progress()['progress']*100)
         points = '.' * (proc % 9)
-        await bot.edit_message_text(
-            chat_id=msgTime.chat.id,
-            message_id=msgTime.message_id,
-            text=str(proc)+'% ' + points
-        )
-        await asyncio.sleep(1)
+        try:
+            await bot.edit_message_text(
+                chat_id=msgTime.chat.id,
+                message_id=msgTime.message_id,
+                text=str(proc)+'% ' + points
+            )
+        finally:
+            await asyncio.sleep(1)
 #TODO
 async def getProgress2(msgTime):
     points = '.'
@@ -363,21 +369,24 @@ def getKeyboard(keysArr, returnAll):
 # Стандартное меню
 async def getKeyboardUnion(txt, message, keyboard, parse_mode = 'Markdown'):
     # Если команда с слешем
-    if hasattr(message, "content_type"):
-        await bot.send_message(
-            chat_id=message.from_user.id,
-            text=txt,
-            reply_markup=keyboard,
-            parse_mode=parse_mode
-        )
-    else:
-        await bot.edit_message_text(
-            chat_id=message.message.chat.id,
-            message_id=message.message.message_id,
-            text=txt,
-            reply_markup=keyboard,
-            parse_mode=parse_mode
-        )
+    try:
+        if hasattr(message, "content_type"):
+            await bot.send_message(
+                chat_id=message.from_user.id,
+                text=txt,
+                reply_markup=keyboard,
+                parse_mode=parse_mode
+            )
+        else:
+            await bot.edit_message_text(
+                chat_id=message.message.chat.id,
+                message_id=message.message.message_id,
+                text=txt,
+                reply_markup=keyboard,
+                parse_mode=parse_mode
+            )
+    except:
+        pass
 
 def getStart(returnAll = 1) -> InlineKeyboardMarkup:
     keysArr = [
@@ -597,8 +606,8 @@ async def show_thumbs(chat_id, res):
 
 # start или help
 @dp.callback_query_handler(text="help")
-@dp.message_handler(commands=["help"])
-@dp.message_handler(commands=["start"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["help"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["start"])
 async def cmd_start(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("cmd_start")
     txt = "Это бот для локального запуска SD\n" + getTxt()
@@ -606,7 +615,7 @@ async def cmd_start(message: Union[types.Message, types.CallbackQuery]) -> None:
 
 # TODO optimize
 # Запуск/Остановка SD. Завязываемся на глобальную иконку sd
-@dp.message_handler(commands=["stop"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["stop"])
 @dp.callback_query_handler(text="sd")
 async def inl_sd(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_sd")
@@ -666,12 +675,15 @@ async def inl_save_prompt(callback: types.CallbackQuery) -> None:
     global data, chatHistoryPrompt
     data['prompt'] = chatHistoryPrompt
     keyboard = InlineKeyboardMarkup(inline_keyboard=[getPromptFromJson(0), getStart(0)])
-    await bot.edit_message_text(
-        chat_id=callback.message.chat.id,
-        message_id=callback.message.message_id,
-        text='Промпт сохранён: ' + chatHistoryPrompt,
-        reply_markup=keyboard
-    )
+    try:
+        await bot.edit_message_text(
+            chat_id=callback.message.chat.id,
+            message_id=callback.message.message_id,
+            text='Промпт сохранён: ' + chatHistoryPrompt,
+            reply_markup=keyboard
+        )
+    except:
+        pass
 
 # upload result.json from chat history
 @dp.callback_query_handler(text="uplchat")
@@ -693,13 +705,16 @@ async def inl_uplchat(callback: types.CallbackQuery) -> None:
 
     chatHistoryPrompt = t#translateRuToEng(t)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[getPromptFromJson(0), getStart(0)])
-    await bot.edit_message_text(
-        chat_id=callback.message.chat.id,
-        message_id=callback.message.message_id,
-        text=t.replace('<', '&lt;').replace('>', '&gt;'),#translateRuToEng(t).replace('<', '&lt;').replace('>', '&gt;'),
-        reply_markup=keyboard,
-        parse_mode = types.ParseMode.HTML
-    )
+    try:
+        await bot.edit_message_text(
+            chat_id=callback.message.chat.id,
+            message_id=callback.message.message_id,
+            text=t.replace('<', '&lt;').replace('>', '&gt;'),#translateRuToEng(t).replace('<', '&lt;').replace('>', '&gt;'),
+            reply_markup=keyboard,
+            parse_mode = types.ParseMode.HTML
+        )
+    except:
+        pass
 
 
 # upload Lora/Model
@@ -724,7 +739,7 @@ async def inl_uplora(callback: types.CallbackQuery) -> None:
         await callback.message.reply(f"Файл '{file_name}' загружен в {folder_path}")
 
 # Вызов reset_param, сброс JSON
-@dp.message_handler(commands=["reset_param"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["reset_param"])
 @dp.callback_query_handler(text="reset_param")
 async def inl_reset_param(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_reset_param")
@@ -739,7 +754,7 @@ async def inl_reset_param(message: Union[types.Message, types.CallbackQuery]) ->
     await getKeyboardUnion(txt, message, keyboard, '')
 
 # Вызов fast_param, быстрые настройки
-@dp.message_handler(commands=["fast_param"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fast_param"])
 @dp.callback_query_handler(text="fast_param")
 async def inl_fast_param(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_fast_param")
@@ -747,13 +762,13 @@ async def inl_fast_param(message: Union[types.Message, types.CallbackQuery]) -> 
     await getKeyboardUnion('Выбери быстрые настройки', message, keyboard, '')
 
 # Список быстрых настроек
-@dp.message_handler(commands=["fp_comp"])
-@dp.message_handler(commands=["fp_mobile"])
-@dp.message_handler(commands=["fp_no_hr"])
-@dp.message_handler(commands=["fp_sdxl"])
-@dp.message_handler(commands=["fp_big"])
-@dp.message_handler(commands=["fp_inc"])
-@dp.message_handler(commands=["fp_wh"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fp_comp"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fp_mobile"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fp_no_hr"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fp_sdxl"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fp_big"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fp_inc"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["fp_wh"])
 @dp.callback_query_handler(text="fp_comp")
 @dp.callback_query_handler(text="fp_mobile")
 @dp.callback_query_handler(text="fp_no_hr")
@@ -780,7 +795,7 @@ async def inl_fp(message: Union[types.Message, types.CallbackQuery]) -> None:
         data['hr_second_pass_steps'] = '10'
         data['cfg_scale'] = '6'
         data['width'] = '512'
-        data['height'] = '768'
+        data['height'] = '512'
         data['restore_faces'] = 'false'
         data['do_not_save_grid'] = 'true'
         data['negative_prompt'] = 'easynegative, bad-hands-5, bad-picture-chill-75v, bad-artist, bad_prompt_version2, rmadanegative4_sd15-neg, bad-image-v2-39000, illustration, painting, cartoons, sketch, (worst quality:2), (low quality:2), (normal quality:2), lowres, bad anatomy, bad hands, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, vaginas in breasts, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, asian, obese, tatoo, stacked torsos, totem pole, watermark, black and white, close up, cartoon, 3d, denim, (disfigured), (deformed), (poorly drawn), (extra limbs), blurry, boring, sketch, lackluster, signature, letters'
@@ -792,13 +807,17 @@ async def inl_fp(message: Union[types.Message, types.CallbackQuery]) -> None:
                       "use_prompt": "true",
                       "json_prompt": "false"}
     if m == 'fp_mobile':
-        data['steps'] = 15
-        data['enable_hr'] = 'false'
-        data['cfg_scale'] = '6'
-        data['width'] = '512'
-        data['height'] = '768'
+        data['steps'] = 5
+        data['enable_hr'] = 'True'
+        data['denoising_strength'] = '0.6'
+        data['sampler_name'] = 'DPM++ SDE'
+        data['hr_upscaler'] = '4x_NMKD-Siax_200k' #https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/4x_NMKD-Siax_200k.pth
+        data['hr_second_pass_steps'] = '6'
+        data['cfg_scale'] = '1.6'
+        data['width'] = '832'
+        data['height'] = '1216'
         data['do_not_save_grid'] = 'true'
-        data['negative_prompt'] = 'easynegative, bad-hands-5, bad-picture-chill-75v, bad-artist, bad_prompt_version2, rmadanegative4_sd15-neg, bad-image-v2-39000, illustration, painting, cartoons, sketch, (worst quality:2), (low quality:2), (normal quality:2), lowres, bad anatomy, bad hands, ((monochrome)), ((grayscale)), collapsed eyeshadow, multiple eyeblows, vaginas in breasts, (cropped), oversaturated, extra limb, missing limbs, deformed hands, long neck, long body, imperfect, (bad hands), signature, watermark, username, artist name, conjoined fingers, deformed fingers, ugly eyes, imperfect eyes, skewed eyes, unnatural face, unnatural body, error, asian, obese, tatoo, stacked torsos, totem pole, watermark, black and white, close up, cartoon, 3d, denim, (disfigured), (deformed), (poorly drawn), (extra limbs), blurry, boring, sketch, lackluster, signature, letters'
+        data['negative_prompt'] = ''
         data['save_images'] = 'true'
         dataParams = {"img_thumb": "true",
                       "img_tg": "false",
@@ -882,7 +901,7 @@ async def inl_fp(message: Union[types.Message, types.CallbackQuery]) -> None:
     await getKeyboardUnion(txt, message, keyboard, '')
 
 # Обработчик команды /skip
-@dp.message_handler(commands=["skip"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["skip"])
 @dp.callback_query_handler(text="skip")
 async def inl_skip(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info('inl_skip')
@@ -895,14 +914,17 @@ async def inl_skip(message: Union[types.Message, types.CallbackQuery]) -> None:
             if hasattr(message, "content_type"):
                 await message.answer("skip")
             else:
-                await bot.edit_message_text(
-                    chat_id=message.message.chat.id,
-                    message_id=message.message.message_id,
-                    text="Пропущено",
-                    reply_markup=getStart(),
-                )
+                try:
+                    await bot.edit_message_text(
+                        chat_id=message.message.chat.id,
+                        message_id=message.message.message_id,
+                        text="Пропущено",
+                        reply_markup=getStart(),
+                    )
+                except:
+                    pass
 
-@dp.message_handler(commands=["gen"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["gen"])
 @dp.callback_query_handler(text="gen")
 async def inl_gen(message: Union[types.Message, types.CallbackQuery]) -> None:
     if hasattr(message, "content_type"):
@@ -1051,7 +1073,7 @@ async def cmd_prompt(message: Union[types.Message, types.CallbackQuery]) -> None
     await getKeyboardUnion("Опции", message, keyboard)
 
 # Получить опции
-@dp.message_handler(commands=["opt"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["opt"])
 @dp.callback_query_handler(text="opt")
 async def cmd_opt(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("cmd_opt")
@@ -1059,7 +1081,7 @@ async def cmd_opt(message: Union[types.Message, types.CallbackQuery]) -> None:
     await getKeyboardUnion("Опции", message, keyboard)
 
 # Вызов sttngs
-@dp.message_handler(commands=["sttngs"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["sttngs"])
 @dp.callback_query_handler(text="sttngs")
 async def inl_sttngs(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_sttngs")
@@ -1067,7 +1089,7 @@ async def inl_sttngs(message: Union[types.Message, types.CallbackQuery]) -> None
     await getKeyboardUnion("Настройки", message, keyboard)
 
 # Вызов script
-@dp.message_handler(commands=["scrpts"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["scrpts"])
 @dp.callback_query_handler(text="scrpts")
 async def inl_scrpts(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_scrpts")
@@ -1075,7 +1097,7 @@ async def inl_scrpts(message: Union[types.Message, types.CallbackQuery]) -> None
     await getKeyboardUnion("Скрипты", message, keyboard)
 
 # Вызов get_models
-@dp.message_handler(commands=["mdl"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["mdl"])
 @dp.callback_query_handler(text="mdl")
 async def inl_mdl(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_mdl")
@@ -1090,8 +1112,8 @@ async def inl_mdl(message: Union[types.Message, types.CallbackQuery]) -> None:
         await getKeyboardUnion("Turn on SD"+sd, message, keyboard)
 
 # Вызов get_samplers
-@dp.message_handler(commands=["smplr"])
-@dp.message_handler(commands=["sampler_name"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["smplr"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["sampler_name"])
 @dp.callback_query_handler(text="smplr")
 async def inl_smplr(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_smplr")
@@ -1122,8 +1144,8 @@ async def inl_sh(message: Union[types.Message, types.CallbackQuery]) -> None:
         await getKeyboardUnion("Turn on SD"+sd, message, keyboard)
 
 # Вызов get_hr_list
-@dp.message_handler(commands=["hr"])
-@dp.message_handler(commands=["hr_upscaler"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["hr"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["hr_upscaler"])
 @dp.callback_query_handler(text="hr")
 async def inl_hr(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("inl_hr")
@@ -1151,14 +1173,14 @@ async def inl_change_param(callback: types.CallbackQuery) -> None:
     )
 
 # script random gen from models
-@dp.message_handler(commands=["rnd_mdl"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["rnd_mdl"])
 @dp.callback_query_handler(text='rnd_mdl')
 async def inl_rnd_mdl(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info('inl_rnd_mdl')
     await rnd_script(message, 'models')
 
 # script random gen from models
-@dp.message_handler(commands=["rnd_smp"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["rnd_smp"])
 @dp.callback_query_handler(text='rnd_smp')
 async def inl_rnd_smp(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info('inl_rnd_smp')
@@ -1212,7 +1234,7 @@ async def inf_func(chatId):
         )
 
 # script random infinity gen from https://random-word-api.herokuapp.com/word?lang=en
-@dp.message_handler(commands=["inf"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["inf"])
 @dp.callback_query_handler(text='inf')
 async def inl_rnd_inf(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info('inl_rnd_inf')
@@ -1251,7 +1273,7 @@ async def inl_rnd_inf(message: Union[types.Message, types.CallbackQuery]) -> Non
             await inf_func(chatId)
 
 # Получить LORA
-@dp.message_handler(commands=["get_lora"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["get_lora"])
 @dp.callback_query_handler(text="get_lora")
 async def getLora(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("getLora")
@@ -1275,7 +1297,7 @@ async def getLora(message: Union[types.Message, types.CallbackQuery]) -> None:
     await getKeyboardUnion(arr, message, keyboard)
 
 # Рандомный промпт с lexica.art на основе data['prompt']
-@dp.message_handler(commands=["lxc_prompt"])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, commands=["lxc_prompt"])
 @dp.callback_query_handler(text="lxc_prompt")
 async def get_lxc_prompt(message: Union[types.Message, types.CallbackQuery]) -> None:
     logging.info("get_lxc_prompt")
@@ -1365,12 +1387,15 @@ async def inl_yes_no(callback: types.CallbackQuery) -> None:
         if callback.data[1:] in dataParams.keys():
             dataParams[callback.data[1:]] = 'False'
     #await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
-    await bot.edit_message_text(
-        chat_id=callback.message.chat.id,
-        message_id=callback.message.message_id,
-        text=f"JSON параметры:\n{getJson()}\n{getJson(1)}",
-        reply_markup=keyboard,
-    )
+    try:
+        await bot.edit_message_text(
+            chat_id=callback.message.chat.id,
+            message_id=callback.message.message_id,
+            text=f"JSON параметры:\n{getJson()}\n{getJson(1)}",
+            reply_markup=keyboard,
+        )
+    except:
+        pass
 
 # отлов поста с канала и мгновенная генерация если включен just_gen
 @dp.channel_post_handler()
@@ -1389,7 +1414,7 @@ async def handle_channel_post(message: types.Message):
         )
 
 # Ввели любой текст
-@dp.message_handler(lambda message: True)
+@dp.message_handler(lambda message: True and (message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0))
 async def change_json(message: types.Message):
     logging.info("change_json")
     keyboard = InlineKeyboardMarkup(inline_keyboard=[getSet(0), getOpt(0), getStart(0)])
@@ -1446,7 +1471,7 @@ async def change_json(message: types.Message):
         )
 
 # Ввели ответ на change_json
-@dp.message_handler(state=Form)
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, state=Form)
 async def answer_handler(message: types.Message, state: FSMContext):
     logging.info('answer_handler')
     keyboard = InlineKeyboardMarkup(inline_keyboard=[getSet(0), getOpt(0), getStart(0)])
@@ -1469,7 +1494,7 @@ async def answer_handler(message: types.Message, state: FSMContext):
         f"JSON параметры:\n{getJson()}\n{getJson(1)}", reply_markup=keyboard
     )
 
-@dp.message_handler(content_types=['document'])
+@dp.message_handler(lambda message: message.from_user.id in ALLOWED_USERS or len(ALLOWED_USERS) == 0, content_types=['document'])
 async def handle_file(message: types.Message):
     logging.info('handle_file')
 

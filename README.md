@@ -42,6 +42,7 @@ docker run -e VK_TOKEN='VK_TOKEN_HERE' \
            -e SD_USERNAME='user' \
            -e SD_PASSWORD='1234' \
            -e DEBUG='no' \
+           -e ALLOWED_USERS='[id1, id2, id3]' # где id - id пользователей telegram в виде числа (пример: [1234, 5678]) без апострофов и тд, если хотите сделать бота общедоступным, то дайте значение '[]'
            soaska.ru/soaska/sd_telegram:latest
 ```
 
